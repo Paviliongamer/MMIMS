@@ -25,6 +25,7 @@ public:
 	void Viewsale(string);
 	void ViewTsale(string);
 	void ViewTopQsale();
+	void MonthSales();
 
 };
 #endif
@@ -350,6 +351,67 @@ op:
 	system("cls");
 }
 
+void Sales::MonthSales()
+{
+	DataConn dc;
+	int month;
+	int m = 0, n = 0;
+	double stotal = 0.0;
+	cout<<"Enter which month data you need: ";
+	cin>>month;
+	PreparedStatement* ps = dc.prepareStatement("SELECT SalesID, StockID, StockName, Quantity, Qprice from salestock NATURAL join stock natural join sales where Month(Sdate) = ? order by SalesID");
+	ps->setInt(1, month);
+	ResultSet* rs = ps->executeQuery();
+	if (rs->next() == false)
+	{
+		cout << "\nNo Sales occured on " << month << endl;
+		system("pause");
+		system("cls");
+		return;
+	}
+	rs->beforeFirst();
+	
+	cout << "\n--------------------------------------------------------------------------------------------------------------------------" << endl;
+	cout << "SalesID\t\tBarcode\t\tStockName\t\tQuantity\t\tPrice\t\t\tTotal per Sales" << endl;
+	cout << "--------------------------------------------------------------------------------------------------------------------------" << endl;
+	int loop = 0;
+	while (rs->next())
+	{
+		n = rs->getInt("SalesID");
+		if (n != m)
+		{
+			cout << "\n" << rs->getInt("SalesID");
+			ps = dc.prepareStatement("Select * from sales where SalesID = ?");
+			ps->setInt(1, n);
+			ResultSet* rs = ps->executeQuery();
+			if (rs->next()) {
+				stotal = rs->getDouble("Tsale");
+			}
+			cout << "\t\t\t\t\t\t\t\t\t\t\t\t\tRM" << fixed << setprecision(2) << stotal << endl;
+		}
+		cout << "\t\t" << rs->getString("StockID") << "\t" << rs->getString("StockName") << "\t\t" << rs->getInt("Quantity") << "\t\t\tRM " << fixed << setprecision(2) << rs->getDouble("Qprice") << endl;;
+		//if(n!=m)
+			//cout << "\t\t\t\t\t\t\t\t\t\t\t\t\tRM" << stotal << endl;
+		m = rs->getInt("SalesID");
+	}
+	cout << "\n----------------------------------------------------------------------------------------------------------------------" << endl;
+	rs->close();
+	ps->close();
+	cout << endl;
+
+	ps = dc.prepareStatement("SELECT sum(Tsale) as total FROM sales where Month(Sdate)=?");
+	ps->setInt(1, month);
+	rs = ps->executeQuery();
+	if (rs->next())
+		cout << "Total sales for " << month << " is RM " << fixed << setprecision(2) << rs->getDouble("total") << endl;
+	rs->close();
+	ps->close();
+
+	cout << endl;
+	system("pause");
+	system("cls");
+
+}
 
 void Sales::AllSales(string date)
 {
