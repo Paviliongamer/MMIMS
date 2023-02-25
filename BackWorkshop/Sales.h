@@ -25,6 +25,7 @@ public:
 	void Viewsale(string);
 	void ViewTsale(string);
 	void ViewTopQsale();
+	void MonthSales();
 
 };
 #endif
@@ -204,7 +205,9 @@ void Sales::Viewsale(string id)
 	cout << "\t--------------------------------" << endl;
 	cout << "\t| 3.Total sales with receipt   |" << endl;
 	cout << "\t--------------------------------" << endl;
-	cout << "\t| 4.Back to sales menu         |" << endl;
+	cout << "\t| 4.Monthly sales report      |" << endl;
+	cout << "\t--------------------------------" << endl;
+	cout << "\t| 5.Back to sales menu         |" << endl;
 	cout << "\t--------------------------------" << endl;
 
 	cout << "\nYour choice: ";
@@ -244,9 +247,14 @@ void Sales::Viewsale(string id)
 		AllSales(date);
 		break;
 
-	case '4':
+	case '5':
 		system("cls");
 		SalesMenu(id);
+		break;
+
+	case '4':
+		system("cls");
+		MonthSales();
 		break;
 
 	default:
@@ -277,6 +285,91 @@ void Sales::UpdateQty(string stockid, int qty)
 	ps->setString(2, stockid);
 	ps->executeUpdate();
 	ps->close();
+
+}
+
+void Sales::MonthSales()
+{
+	DataConn dc;
+	Date d;
+	string Month[12] = {"January", "February", "March","April","May","June", "July", "August","September","October","November","December"};
+	int curryear = d.getYear();
+	int month,yer;
+	int m = 0, n = 0;
+	double stotal = 0.0;
+	cout << "Enter year (yyyy): ";
+	while (!(cin >> yer) || yer<2000 || yer>curryear)
+	{
+		system("cls");
+		cout << "Invalid year. Try again" << endl;
+		cin.clear();
+		cin.ignore(123, '\n');
+		cout << "Enter year (yyyy): ";
+	}
+	cout << "Enter which month data you need: ";
+	while (!(cin >> month) || month>12 || month<1)
+	{
+		system("cls");
+		cout << "Incorrect month. Please enter between 1-12" << endl;
+		cin.clear();
+		cin.ignore(123, '\n');
+		cout << "Enter which month data you need: ";
+
+	}
+	string MonthName = Month[month - 1];
+	
+	PreparedStatement* ps = dc.prepareStatement("SELECT SalesID, StockID, StockName, Quantity, Qprice from salestock NATURAL join stock natural join sales where Month(Sdate) = ? and Year(Sdate) = ? order by SalesID");
+	ps->setInt(1, month);
+	ps->setInt(2, yer);
+	ResultSet* rs = ps->executeQuery();
+	if (rs->next() == false)
+	{
+		cout << "\nNo Sales occured on " << MonthName <<' ' << yer << endl;
+		system("pause");
+		system("cls");
+		return;
+	}
+	rs->beforeFirst();
+
+	cout << "\n--------------------------------------------------------------------------------------------------------------------------" << endl;
+	cout << "SalesID\t\tBarcode\t\tStockName\t\tQuantity\t\tPrice\t\t\tTotal per Sales" << endl;
+	cout << "--------------------------------------------------------------------------------------------------------------------------" << endl;
+	int loop = 0;
+	while (rs->next())
+	{
+		n = rs->getInt("SalesID");
+		if (n != m)
+		{
+			cout << "\n" << rs->getInt("SalesID");
+			ps = dc.prepareStatement("Select * from sales where SalesID = ?");
+			ps->setInt(1, n);
+			ResultSet* rs = ps->executeQuery();
+			if (rs->next()) {
+				stotal = rs->getDouble("Tsale");
+			}
+			cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t\tRM" << fixed << setprecision(2) << stotal << endl;
+		}
+		cout << "\t\t" << rs->getString("StockID") << "\t" << rs->getString("StockName") << "\t\t" << rs->getInt("Quantity") << "\t\t\t\t RM " << fixed << setprecision(2) << rs->getDouble("Qprice") << endl;;
+		//if(n!=m)
+	//	cout << "\t\t\t\t\t\t\t\t\t\t\t\t\t\tRM" << stotal << endl;
+		m = rs->getInt("SalesID");
+	}
+	cout << "\n----------------------------------------------------------------------------------------------------------------------" << endl;
+	rs->close();
+	ps->close();
+	cout << endl;
+
+	ps = dc.prepareStatement("SELECT sum(Tsale) as total FROM sales where Month(Sdate)=?");
+	ps->setInt(1, month);
+	rs = ps->executeQuery();
+	if (rs->next())
+		cout << "Total sales for " << MonthName << ' ' << yer << " is RM " << fixed << setprecision(2) << rs->getDouble("total") << endl;
+	rs->close();
+	ps->close();
+
+	cout << endl;
+	system("pause");
+	system("cls");
 
 }
 

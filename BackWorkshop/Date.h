@@ -15,6 +15,7 @@ private:
 public:
 	Date();
 	string getDate();
+	int getYear();
 };
 #endif
 
@@ -28,4 +29,14 @@ string Date::getDate()
 	strftime(date_string, 25, "%Y-%m-%d", curr_tm);
 
 	return date_string;
+}
+
+int Date::getYear()
+{
+	time(&curr_time);
+	curr_tm = localtime(&curr_time);
+
+	strftime(date_string, 25, "%Y", curr_tm);
+
+	return stoi(date_string);
 }
